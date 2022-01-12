@@ -6,7 +6,7 @@
 
 ### University of Dayton
 
-## Repository Information
+## Information
 
 This is a private repository for Riley Miranda to store code from the course.
 
