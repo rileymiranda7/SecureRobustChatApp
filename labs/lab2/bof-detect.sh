@@ -14,7 +14,6 @@ do
 	if [ $return_code -eq 127 ]; then
 		echo $program does not exist
 	elif [[ $return_code -eq 0 ]]; then
-		echo $auto_input
 		echo Executed successfully with input length = $input_length
 		auto_input="$auto_input$varx"
 		((input_length=input_length+1))
