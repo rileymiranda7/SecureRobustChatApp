@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <netdb.h>
 
 int main (int argc, char *argv[])
 {
@@ -28,7 +29,28 @@ int main (int argc, char *argv[])
 	}
 	printf("A socket is opened!\n");
 	//main code goes here
-	//...
+	struct addrinfo hints, *serveraddr;
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	int addr_lookup =
+		getaddrinfo(servername, port, &hints, &serveraddr);
+	if (addr_lookup != 0) {
+		fprintf(stderr, "getaddrinfo: %s\n",
+							gai_strerror(addr_lookup));
+		exit(3);
+	}
+	int connected = connect(sockfd, serveraddr->ai_addr,
+									serveraddr->ai_addrlen);
+	if(connected < 0){
+		perror("Cannot connect to the server\n");
+		exit(3);
+	}else
+		printf("Connected to the server %s at port %s\n",
+					servername, port);
+	freeaddrinfo(serveraddr);
+
+
 	//put the below code at the end;
 	close(sockfd);
 }
