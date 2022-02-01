@@ -10,18 +10,18 @@
 int main (int argc, char *argv[])
 {
 	if(argc!=3) {
-		printf("Usage: %s <servername> <port>\n", argv[0]);
+		printf("Usage: %s <servername> <path>\n", argv[0]);
 		exit(1);
 	}
 	printf("TCP Client program by Riley Miranda\n");
 	char *servername = argv[1];
-	char *port = argv[2];
-	if ( strlen(servername) > 255 || strlen(port) > 5) {
-		printf("Servername or port is too long.\
+	char *path = argv[2];
+	if ( strlen(servername) > 255 /*|| strlen(path) > 5*/) {
+		printf("Servername or path is too long.\
 					Please try again!\n");
 		exit(1);
 	}
-	printf("Servername= %s, port=%s\n", servername, port);
+	printf("HTTP Server: %s, path: %s\n", servername, path);
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		perror("ERROR opening socket");
@@ -34,7 +34,7 @@ int main (int argc, char *argv[])
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	int addr_lookup =
-		getaddrinfo(servername, port, &hints, &serveraddr);
+		getaddrinfo(servername, "80", &hints, &serveraddr);
 	if (addr_lookup != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n",
 							gai_strerror(addr_lookup));
@@ -46,16 +46,19 @@ int main (int argc, char *argv[])
 		perror("Cannot connect to the server\n");
 		exit(4);
 	}
-	printf("Connected to the server %s at port %s\n",
-					servername, port);
+	printf("Connected to the server %s at port http-80\n",
+					servername);
 	freeaddrinfo(serveraddr);
 
-	// Send data from user input
+	// Get and Send data from user input
 	int BUFFERSIZE = 1024; //define the size of the buffer
 	char buffer[BUFFERSIZE]; //define the buffer
 	bzero(buffer,BUFFERSIZE); //empty the buffer
-	printf("Enter your message to send: ");
-	fgets(buffer, BUFFERSIZE, stdin); // secure version of gets
+	//printf("Enter your message to send: ");
+	//fgets(buffer, BUFFERSIZE, stdin); // secure version of gets
+	printf("HTTP Request Sent:\n");
+	sprintf(buffer, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n",
+			path, servername);
 	int byte_sent = send(sockfd,buffer, strlen(buffer), 0);
 
 	// Receive data
@@ -65,10 +68,10 @@ int main (int argc, char *argv[])
 		perror("Error in reading");
 		exit(4);
 	}
-	printf("Received from server: %s", buffer);
-
+	printf("HTTP Response Received: %s", buffer);
+	
 
 	//put the below code at the end;
 	close(sockfd);
 	return 0;
-}//end main function
+}
