@@ -57,6 +57,7 @@ int main (int argc, char *argv[])
 	//printf("Enter your message to send: ");
 	//fgets(buffer, BUFFERSIZE, stdin); // secure version of gets
 	printf("HTTP Request Sent:\n");
+	printf("GET %s HTTP/1.1\nHost: %s\r\n\r\n", path, servername);
 	sprintf(buffer, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n",
 			path, servername);
 	int byte_sent = send(sockfd,buffer, strlen(buffer), 0);
@@ -68,7 +69,7 @@ int main (int argc, char *argv[])
 		perror("Error in reading");
 		exit(4);
 	}
-	printf("HTTP Response Received: %s", buffer);
+	printf("HTTP Response Received:\r\n%s", buffer);
 	
 
 	//put the below code at the end;
