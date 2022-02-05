@@ -16,7 +16,7 @@ int main (int argc, char *argv[])
 	printf("TCP Client program by Riley Miranda\n");
 	char *servername = argv[1];
 	char *path = argv[2];
-	if ( strlen(servername) > 255 /*|| strlen(path) > 5*/) {
+	if ( strlen(servername) > 255 || strlen(path) > 5) {
 		printf("Servername or path is too long.\
 					Please try again!\n");
 		exit(1);
