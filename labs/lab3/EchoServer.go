@@ -1,4 +1,5 @@
-/* Simple EchoServer in GoLang by Phu Phung, customized by Riley Miranda for SecAD*/
+/* Simple EchoServer in GoLang by Phu Phung, customized 
+by Riley Miranda for SecAD*/
 package main
 
 import (
@@ -9,6 +10,7 @@ import (
 
 const BUFFERSIZE int = 1024
 var allClient_conns = make(map[net.Conn]string)
+var newclient = make(chan net.Conn)
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Printf("Usage: %s <port>\n", os.Args[0])
@@ -26,16 +28,23 @@ func main() {
 	}
 	fmt.Println("EchoServer in GoLang developed by Phu Phung, SecAD, revised by Your Name")
 	fmt.Printf("EchoServer is listening on port '%s' ...\n", port)
+	go func (){
+		for {
+			client_conn, _ := server.Accept()
+			newclient <- client_conn
+		}
+	}()
 	for {
-		client_conn, _ := server.Accept()
-		go client_goroutine(client_conn)
+		select{
+				case client_conn := <- newclient:
+					allClient_conns[client_conn]= client_conn.RemoteAddr().String()
+					fmt.Printf("# of connected clients: %d\n", 
+						len(allClient_conns))
+					go client_goroutine(client_conn)
+		}
 	}
 }
-
 func client_goroutine(client_conn net.Conn){
-	fmt.Printf("A new client '%s' connected!\n", client_conn.RemoteAddr().String())
-	allClient_conns[client_conn] = client_conn.RemoteAddr().String()
-	fmt.Printf("# of connected clients: %d\n", len(allClient_conns))
 	var buffer [BUFFERSIZE]byte
 	for {
 		byte_received, read_err := client_conn.Read(buffer[0:])
