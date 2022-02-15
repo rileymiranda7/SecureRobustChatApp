@@ -25,4 +25,29 @@ function connected(){
 	client.on("data", data => {
 		console.log("Received data: " + data);
 	});
+
+	client.on("error", function(err){
+		console.log("Error");
+		process.exit(2);
+	});
+	client.on("close", function(data){
+		console.log("Connection has been disconnected");
+		process.exit(3);
+	});
+
+	const keyboard = require('readline').createInterface({
+		input: process.stdin,
+		output: process.stout
+	});
+	keyboard.on('line', (input) => {
+		console.log(`You typed: ${input}`);
+		//Some code here to handle input
+		if(input === 'exit'){
+			client.destroy();
+			console.log('disconnected!');
+			process.exit();
+		} else {
+		client.write(input);
+		}
+	});
 }
