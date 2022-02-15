@@ -11,6 +11,17 @@ import (
 const BUFFERSIZE int = 1024
 var allClient_conns = make(map[net.Conn]string)
 var newclient = make(chan net.Conn)
+var lostclient = make(chan net.Conn)
+go func(){
+	for {
+		byte_received,read_err := client_conn.Read(buffer[0:])
+		if read_err != nil {
+			fmt.Println("Error in receiving...")
+			lostclient <- client_conn
+			return
+		}
+	}
+}()
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Printf("Usage: %s <port>\n", os.Args[0])
@@ -38,9 +49,13 @@ func main() {
 		select{
 				case client_conn := <- newclient:
 					allClient_conns[client_conn]= client_conn.RemoteAddr().String()
-					fmt.Printf("# of connected clients: %d\n", 
-						len(allClient_conns))
+					welcomemessage :=fmt.Sprintf("A new client '%s' connected!\n# of connected clients: %d\n",
+						client_conn.RemoteAddr().String(), len(allClient_conns))
+					fmt.Println(welcomemessage)
+					//broadcasting
+					sendtoAll([]byte (welcomemessage))
 					go client_goroutine(client_conn)
+				case client_conn :=
 		}
 	}
 }
@@ -52,11 +67,22 @@ func client_goroutine(client_conn net.Conn){
 			fmt.Println("Error in receiving...")
 			return
 		}
-		_, write_err := client_conn.Write(buffer[0:byte_received])
+		//broadcasting
+		sendtoAll(buffer[0:byte_received])
+		/*_, write_err := client_conn.Write(buffer[0:byte_received])
 		if write_err != nil {
 			fmt.Println("Error in sending...")
 			return
 		}
-		fmt.Printf("Received data: %sEchoed back!\n", buffer)
+		fmt.Printf("Received data: %sEchoed back!\n", buffer)*/
 	}
+}
+func sendtoAll(data []byte) {
+	for client_conn, _ := range allClient_conns{
+		_, write_err := client_conn.Write(data)
+		if write_err != nil {
+			continue //move on next iteration
+		}
+	}
+	fmt.Printf("Send data: %s to all clients!\n", data)
 }
