@@ -12,16 +12,7 @@ const BUFFERSIZE int = 1024
 var allClient_conns = make(map[net.Conn]string)
 var newclient = make(chan net.Conn)
 var lostclient = make(chan net.Conn)
-go func(){
-	for {
-		byte_received,read_err := client_conn.Read(buffer[0:])
-		if read_err != nil {
-			fmt.Println("Error in receiving...")
-			lostclient <- client_conn
-			return
-		}
-	}
-}()
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Printf("Usage: %s <port>\n", os.Args[0])
@@ -37,7 +28,7 @@ func main() {
 		fmt.Printf("Cannot listen on port '" + port + "'!\n")
 		os.Exit(2)
 	}
-	fmt.Println("EchoServer in GoLang developed by Phu Phung, SecAD, revised by Your Name")
+	fmt.Println("EchoServer in GoLang developed by Phu Phung, SecAD, revised by Riley Miranda")
 	fmt.Printf("EchoServer is listening on port '%s' ...\n", port)
 	go func (){
 		for {
@@ -55,7 +46,12 @@ func main() {
 					//broadcasting
 					sendtoAll([]byte (welcomemessage))
 					go client_goroutine(client_conn)
-				case client_conn :=
+				case client_conn := <- lostclient:
+					//handling for the event
+					delete(allClient_conns, client_conn)
+					byemessage := fmt.Sprintf("Client '%s' is DISCONNECTED!\n# of connected clients: %d\n",
+						client_conn.RemoteAddr().String(), len(allClient_conns))
+					sendtoAll([]byte(byemessage))
 		}
 	}
 }
@@ -65,10 +61,28 @@ func client_goroutine(client_conn net.Conn){
 		byte_received, read_err := client_conn.Read(buffer[0:])
 		if read_err != nil {
 			fmt.Println("Error in receiving...")
+			lostclient <- client_conn
 			return
 		}
+
+		// input validation
+		fmt.Printf("Received data: %sdata size = %d\n", 
+				string(buffer[:]), byte_received)
+		if byte_received >= 7 && string(buffer[0:5]) == "login" {
+			success_message := fmt.Sprintf("You typed: login\nReceived data: login data\n")
+			_, write_err := client_conn.Write([]byte(success_message))
+			if write_err == nil {
+				fmt.Println("Sent data: login")
+			}
+		} else { 
+			err_message := fmt.Sprintf("You typed: %sReceived data: Non-login data\n", string(buffer[:]))
+			_, write_err := client_conn.Write([]byte(err_message))
+			if write_err == nil {
+				fmt.Println("Sent data: Non-login data")
+			}
+		}
 		//broadcasting
-		sendtoAll(buffer[0:byte_received])
+		//sendtoAll(buffer[0:byte_received])
 		/*_, write_err := client_conn.Write(buffer[0:byte_received])
 		if write_err != nil {
 			fmt.Println("Error in sending...")
