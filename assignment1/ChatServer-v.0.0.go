@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"encoding/json"
 )
 
 const BUFFERSIZE int = 1024
@@ -100,3 +101,25 @@ func sendtoAll(data []byte) {
 	}
 	fmt.Printf("Send data: %s to all clients!\n", data)
 }
+func sendto(data []byte, client_conn net.Conn) {
+	_, write_err := client_conn.Write(data)
+	if write_err != nil {
+		continue //move on next iteration
+	}
+	fmt.Printf("Send data: %s to client!\n", data)
+}
+
+func login(){}
+func checklogin(){}
+func checkaccount(){}
+
+// define login struct
+type Login struct {
+	username string
+	password string
+}
+loginJson := `{"username": "bob", "password": "1234" }`
+var myLogin Login //var login is type Login
+json.Unmarshal([]byte(loginJson), &myLogin)
+// Now can access username and password using dot notation:
+// myLogin.username, myLogin.password
