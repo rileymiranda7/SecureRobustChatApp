@@ -1,17 +1,18 @@
 import java.net.*;
 import java.io.*;
+import java.util.ArrayList;
 
 public class EchoServer {
-    public static void main(String[] args) throws IOException {
-        static ThreadList threadlist = new ThreadList();
+    static ThreadList threadlist = new ThreadList();
 
+    public static void main(String[] args) throws IOException {
         if (args.length != 1) {
             System.err.println("Usage: java EchoServer <port number>");
             System.exit(1);
         }
         
         int portNumber = Integer.parseInt(args[0]);
-        
+        System.out.println("EchoServer by Riley Miranda");
         try {
             ServerSocket serverSocket =
                 new ServerSocket(Integer.parseInt(args[0]));
@@ -68,7 +69,7 @@ class ThreadList{
     //return the number of current threads
         return threadlist.size();
     }
-    public void addThread(EchoServerThread newthread){
+    public void addThread(EchoServerThread newThread){
     //add the newthread object to the threadlist
     threadlist.add(newThread);    
     }
