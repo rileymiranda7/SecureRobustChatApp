@@ -12,16 +12,7 @@ const BUFFERSIZE int = 1024
 var allClient_conns = make(map[net.Conn]string)
 var newclient = make(chan net.Conn)
 var lostclient = make(chan net.Conn)
-go func(){
-	for {
-		byte_received,read_err := client_conn.Read(buffer[0:])
-		if read_err != nil {
-			fmt.Println("Error in receiving...")
-			lostclient <- client_conn
-			return
-		}
-	}
-}()
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Printf("Usage: %s <port>\n", os.Args[0])
@@ -37,7 +28,7 @@ func main() {
 		fmt.Printf("Cannot listen on port '" + port + "'!\n")
 		os.Exit(2)
 	}
-	fmt.Println("EchoServer in GoLang developed by Phu Phung, SecAD, revised by Your Name")
+	fmt.Println("EchoServer in GoLang developed by Phu Phung, SecAD, revised by Riley Miranda")
 	fmt.Printf("EchoServer is listening on port '%s' ...\n", port)
 	go func (){
 		for {
@@ -47,6 +38,7 @@ func main() {
 	}()
 	for {
 		select{
+				// case: new connection enters newclient channel
 				case client_conn := <- newclient:
 					allClient_conns[client_conn]= client_conn.RemoteAddr().String()
 					welcomemessage :=fmt.Sprintf("A new client '%s' connected!\n# of connected clients: %d\n",
@@ -55,27 +47,36 @@ func main() {
 					//broadcasting
 					sendtoAll([]byte (welcomemessage))
 					go client_goroutine(client_conn)
-				case client_conn :=
+				// case: new connection enters lostclient channel
+				case client_conn := <- lostclient:
+					//handling for the event
+					delete(allClient_conns, client_conn)
+					byemessage := fmt.Sprintf("Client '%s' is DISCONNECTED!\n# of connected clients: %d\n",
+						client_conn.RemoteAddr().String(), len(allClient_conns))
+					sendtoAll([]byte(byemessage))
 		}
 	}
 }
 func client_goroutine(client_conn net.Conn){
 	var buffer [BUFFERSIZE]byte
-	for {
-		byte_received, read_err := client_conn.Read(buffer[0:])
-		if read_err != nil {
-			fmt.Println("Error in receiving...")
-			return
+	go func(){
+		for {
+			byte_received,read_err := client_conn.Read(buffer[0:])
+			if read_err != nil {
+				fmt.Println("Error in receiving...")
+				lostclient <- client_conn
+				return
+			}
+			//broadcasting
+			sendtoAll(buffer[0:byte_received])
 		}
-		//broadcasting
-		sendtoAll(buffer[0:byte_received])
+	}()
 		/*_, write_err := client_conn.Write(buffer[0:byte_received])
 		if write_err != nil {
 			fmt.Println("Error in sending...")
 			return
 		}
 		fmt.Printf("Received data: %sEchoed back!\n", buffer)*/
-	}
 }
 func sendtoAll(data []byte) {
 	for client_conn, _ := range allClient_conns{
