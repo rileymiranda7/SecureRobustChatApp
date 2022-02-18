@@ -26,7 +26,7 @@ func main() {
 		fmt.Printf("Cannot listen on port '" + port + "'!\n")
 		os.Exit(2)
 	}
-	fmt.Println("EchoServer in GoLang developed by Phu Phung, SecAD, revised by Your Name")
+	fmt.Println("EchoServer in GoLang developed by Phu Phung, SecAD, revised by Riley Miranda")
 	fmt.Printf("EchoServer is listening on port '%s' ...\n", port)
 	go func (){
 		for {
