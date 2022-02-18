@@ -42,7 +42,7 @@ function connected(){
 	keyboard.on('line', (input) => {
 		console.log(`You typed: ${input}`);
 		//Some code here to handle input
-		if(input === 'exit'){
+		if(input === '.exit'){
 			client.destroy();
 			console.log('disconnected!');
 			process.exit();
