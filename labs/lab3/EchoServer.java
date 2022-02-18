@@ -65,19 +65,19 @@ class ThreadList{
     private ArrayList<EchoServerThread> threadlist = new ArrayList<EchoServerThread>();
     public ThreadList(){        
     }
-    public int getNumberofThreads(){
+    public synchronized int getNumberofThreads(){
     //return the number of current threads
         return threadlist.size();
     }
-    public void addThread(EchoServerThread newThread){
+    public synchronized void addThread(EchoServerThread newThread){
     //add the newthread object to the threadlist
     threadlist.add(newThread);    
     }
-    public void removeThread(EchoServerThread thread){
+    public synchronized void removeThread(EchoServerThread thread){
     //remove the given thread from the threadlist 
     threadlist.remove(thread);      
     }
-    public void sendToAll(String message){
+    public synchronized void sendToAll(String message){
     //ask each thread in the threadlist to send the given message to its client     
     }
 }
