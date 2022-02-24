@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"encoding/json"
+	//"encoding/json"
 )
 
 const BUFFERSIZE int = 1024
 var allClient_conns = make(map[net.Conn]string)
 var newclient = make(chan net.Conn)
 var lostclient = make(chan net.Conn)
+//var clientAuthenticated = make(chan net.Conn)
 
 func main() {
 	if len(os.Args) != 2 {
@@ -40,19 +41,22 @@ func main() {
 	for {
 		select{
 				case client_conn := <- newclient:
-					allClient_conns[client_conn]= client_conn.RemoteAddr().String()
-					welcomemessage :=fmt.Sprintf("A new client '%s' connected!\n# of connected clients: %d\n",
-						client_conn.RemoteAddr().String(), len(allClient_conns))
-					fmt.Println(welcomemessage)
-					//broadcasting
-					sendtoAll([]byte (welcomemessage))
-					go client_goroutine(client_conn)
+					if login(client_conn) {
+						allClient_conns[client_conn]= client_conn.RemoteAddr().String()
+						welcomemessage :=fmt.Sprintf("A new client '%s' connected!\n# of connected clients: %d\n",
+							client_conn.RemoteAddr().String(), len(allClient_conns))
+						fmt.Println(welcomemessage)
+						//broadcasting
+						sendtoAll([]byte (welcomemessage))
+						go client_goroutine(client_conn)
+					}
 				case client_conn := <- lostclient:
 					//handling for the event
 					delete(allClient_conns, client_conn)
 					byemessage := fmt.Sprintf("Client '%s' is DISCONNECTED!\n# of connected clients: %d\n",
 						client_conn.RemoteAddr().String(), len(allClient_conns))
 					sendtoAll([]byte(byemessage))
+				//case  client_conn := <- clientAuthenticated
 		}
 	}
 }
@@ -104,12 +108,35 @@ func sendtoAll(data []byte) {
 func sendto(data []byte, client_conn net.Conn) {
 	_, write_err := client_conn.Write(data)
 	if write_err != nil {
-		continue //move on next iteration
+		fmt.Println("Error in receiving...")
+		return
 	}
-	fmt.Printf("Send data: %s to client!\n", data)
+	//fmt.Printf("Send data: %s to client!\n", data)
+}
+func readInput(client_conn net.Conn) string {
+	var buffer [BUFFERSIZE]byte
+	byte_received, read_err := client_conn.Read(buffer[0:])
+	if (read_err != nil || byte_received < 2) {
+		fmt.Println("Error in receiving...")
+		return "error"
+	}
+
+	//var username = string(buffer[0:])
+	return string(buffer[0:])
 }
 
-func login(){}
+func login(client_conn net.Conn) bool {
+	//var buffer [BUFFERSIZE]byte
+	go func(){
+		sendto([]byte ("   username: "), client_conn)
+		var username = readInput(client_conn)
+		fmt.Printf("username received: %s", username)
+		sendto([]byte ("   password: "), client_conn)
+		var password = readInput(client_conn)
+		fmt.Printf("password received: %s", password)
+	}()
+	return false
+}
 func checklogin(){}
 func checkaccount(){}
 
@@ -118,8 +145,8 @@ type Login struct {
 	username string
 	password string
 }
-loginJson := `{"username": "bob", "password": "1234" }`
-var myLogin Login //var login is type Login
-json.Unmarshal([]byte(loginJson), &myLogin)
+//loginJson := `{"username": "bob", "password": "1234" }`
+//var myLogin Login //var login is type Login
+//json.Unmarshal([]byte(loginJson), &myLogin)
 // Now can access username and password using dot notation:
 // myLogin.username, myLogin.password
