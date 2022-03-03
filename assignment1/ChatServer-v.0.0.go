@@ -124,9 +124,9 @@ func readInput(client_conn net.Conn) string {
 		fmt.Println("Error in receiving...")
 		return "error"
 	}
-
+	fmt.Printf("Read input of size %d\n", len(buffer))
 	//var username = string(buffer[0:])
-	return string(buffer[0:])
+	return string(buffer[:])
 }
 
 func login(client_conn net.Conn) bool {
@@ -136,6 +136,7 @@ func login(client_conn net.Conn) bool {
 	return func() bool {
 		sendto([]byte("   username: "), client_conn)
 		username = readInput(client_conn)
+		username = strings.Replace(username, " ", "", -1)
 		fmt.Printf("username received: %s", username)
 		sendto([]byte("   password: "), client_conn)
 		password = readInput(client_conn)
@@ -159,10 +160,11 @@ func checklogin(username string, password string, client_conn net.Conn) bool {
 }
 func checkaccount(account Account, client_conn net.Conn) bool {
 	fmt.Println("@checkaccount()")
-	if account.username != "" && account.password != "" {
+	if account.username != "" && account.password != "" && len(account.username) > 3 && len(account.password) > 3 {
 		fmt.Println("@checkaccount() -> username and password received")
 		return true
 	} else {
+		sendto([]byte("Invalid Username or Password...\n"), client_conn)
 		return login(client_conn)
 	}
 }
