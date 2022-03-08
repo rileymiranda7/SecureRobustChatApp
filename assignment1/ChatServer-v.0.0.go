@@ -90,14 +90,6 @@ func client_goroutine(client_conn net.Conn) {
 				fmt.Println("Sent data: Non-login data")
 			}
 		}
-		//broadcasting
-		//sendtoAll(buffer[0:byte_received])
-		/*_, write_err := client_conn.Write(buffer[0:byte_received])
-		if write_err != nil {
-			fmt.Println("Error in sending...")
-			return
-		}
-		fmt.Printf("Received data: %sEchoed back!\n", buffer)*/
 	}
 }
 func sendtoAll(data []byte) {
@@ -115,33 +107,45 @@ func sendto(data []byte, client_conn net.Conn) {
 		fmt.Println("Error in receiving...")
 		return
 	}
-	//fmt.Printf("Send data: %s to client!\n", data)
 }
-func readInput(client_conn net.Conn) string {
+
+// Reads input; returns false if input is empty (less than 3 bytes)
+func readInput(client_conn net.Conn) (string, bool) {
+	fmt.Println("@readInput()")
 	var buffer [BUFFERSIZE]byte
 	byte_received, read_err := client_conn.Read(buffer[0:])
-	if read_err != nil || byte_received < 2 {
-		fmt.Println("Error in receiving...")
-		return "error"
+	fmt.Printf("Read input of size %d\n", byte_received)
+	if read_err != nil || byte_received < 3 {
+		fmt.Println("Error in receiving or empty input...")
+		return "error", true
 	}
-	fmt.Printf("Read input of size %d\n", len(buffer))
-	//var username = string(buffer[0:])
-	return string(buffer[:])
+	return string(buffer[:]), false
 }
 
 func login(client_conn net.Conn) bool {
 	fmt.Println("@login()")
-	//var buffer [BUFFERSIZE]byte
 	var username, password string
+	var usernameInputEmpty bool = true
+	var passwordInputEmpty bool = true
 	return func() bool {
 		sendto([]byte("   username: "), client_conn)
-		username = readInput(client_conn)
-		username = strings.Replace(username, " ", "", -1)
-		fmt.Printf("username received: %s", username)
-		sendto([]byte("   password: "), client_conn)
-		password = readInput(client_conn)
-		fmt.Printf("password received: %s", password)
-		return checklogin(username, password, client_conn)
+		username, usernameInputEmpty = readInput(client_conn)
+		if !usernameInputEmpty { // if inputted username is not empty or there is error
+			username = strings.Replace(username, " ", "", -1)
+			fmt.Printf("username received: %s", username)
+			sendto([]byte("   password: "), client_conn)
+			password, passwordInputEmpty = readInput(client_conn)
+			if !passwordInputEmpty {
+				fmt.Printf("password received: %s", password)
+				return checklogin(username, password, client_conn)
+			} else {
+				sendto([]byte("Error with entered password: Please try again\n"), client_conn)
+				return login(client_conn)
+			}
+		} else { //username is empty
+			sendto([]byte("Error with entered username: Please try again\n"), client_conn)
+			return login(client_conn)
+		}
 	}()
 	//return checklogin(username, password, client_conn)
 }
