@@ -3,14 +3,26 @@ by Riley Miranda for SecAD*/
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
-	"strings"
 	//"encoding/json"
 )
 
 const BUFFERSIZE int = 1024
+
+// define Account struct
+type Account struct {
+	Username string
+	Password string
+}
+
+//loginJson := `{"username": "bob", "password": "1234" }`
+//var myLogin Login //var login is type Login
+//json.Unmarshal([]byte(loginJson), &myLogin)
+// Now can access username and password using dot notation:
+// myLogin.username, myLogin.password
 
 var allClient_conns = make(map[net.Conn]string)
 var newclient = make(chan net.Conn)
@@ -33,8 +45,8 @@ func main() {
 		fmt.Printf("Cannot listen on port '" + port + "'!\n")
 		os.Exit(2)
 	}
-	fmt.Println("EchoServer in GoLang developed by Phu Phung, SecAD, revised by Riley Miranda")
-	fmt.Printf("EchoServer is listening on port '%s' ...\n", port)
+	fmt.Println("ChatServer in GoLang developed by Riley Miranda")
+	fmt.Printf("ChatServer is listening on port '%s' ...\n", port)
 	go func() {
 		for {
 			client_conn, _ := server.Accept()
@@ -110,61 +122,52 @@ func sendto(data []byte, client_conn net.Conn) {
 }
 
 // Reads input; returns false if input is empty (less than 3 bytes)
-func readInput(client_conn net.Conn) (string, bool) {
+func readInput(client_conn net.Conn) string {
 	fmt.Println("@readInput()")
 	var buffer [BUFFERSIZE]byte
 	byte_received, read_err := client_conn.Read(buffer[0:])
 	fmt.Printf("Read input of size %d\n", byte_received)
 	if read_err != nil || byte_received < 3 {
 		fmt.Println("Error in receiving or empty input...")
-		return "error", true
+		return "error"
 	}
-	return string(buffer[:]), false
+	return string(buffer[:byte_received])
 }
 
+/**
+Get login data and call checklogin()
+If checklogin() returns true send client to authenticated channel to put on list
+Else send error message back to client and call login() again
+*/
 func login(client_conn net.Conn) bool {
 	fmt.Println("@login()")
-	var username, password string
-	var usernameInputEmpty bool = true
-	var passwordInputEmpty bool = true
-	return func() bool {
-		sendto([]byte("   username: "), client_conn)
-		username, usernameInputEmpty = readInput(client_conn)
-		if !usernameInputEmpty { // if inputted username is not empty or there is error
-			username = strings.Replace(username, " ", "", -1)
-			fmt.Printf("username received: %s", username)
-			sendto([]byte("   password: "), client_conn)
-			password, passwordInputEmpty = readInput(client_conn)
-			if !passwordInputEmpty {
-				fmt.Printf("password received: %s", password)
-				return checklogin(username, password, client_conn)
-			} else {
-				sendto([]byte("Error with entered password: Please try again\n"), client_conn)
-				return login(client_conn)
-			}
-		} else { //username is empty
-			sendto([]byte("Error with entered username: Please try again\n"), client_conn)
-			return login(client_conn)
-		}
-	}()
-	//return checklogin(username, password, client_conn)
+	var loginJSONstring = readInput(client_conn)
+	fmt.Printf("Received login JSON: %s\n", loginJSONstring)
+	return checklogin(loginJSONstring, client_conn)
 }
-func checklogin(username string, password string, client_conn net.Conn) bool {
+
+/**
+Parse the username and password
+Call checkaccount() to see if valid
+*/
+func checklogin(loginJSONstring string, client_conn net.Conn) bool {
 	fmt.Println("@checklogin()")
-	username = strings.Replace(username, " ", "", -1)
-	password = strings.Replace(password, " ", "", -1)
-	if username == "" || password == "" {
-		fmt.Println("@checklogin() -> username or password empty")
-		return login(client_conn)
-	}
 	var account Account
-	account.username = username
-	account.password = password
+	err := json.Unmarshal([]byte(loginJSONstring), &account)
+	if err != nil /*|| account.username == "" || account.password == ""*/ {
+		fmt.Printf("JSON parsing error: %s\n", err)
+		return false
+	}
+	fmt.Printf("account.username: %s\naccount.password: %s\n", account.Username, account.Password)
 	return checkaccount(account, client_conn)
 }
+
+/**
+Compare username/password with database
+*/
 func checkaccount(account Account, client_conn net.Conn) bool {
 	fmt.Println("@checkaccount()")
-	if account.username != "" && account.password != "" && len(account.username) > 3 && len(account.password) > 3 {
+	if account.Username == "riley" && account.Password == "12345" {
 		fmt.Println("@checkaccount() -> username and password received")
 		return true
 	} else {
@@ -172,15 +175,3 @@ func checkaccount(account Account, client_conn net.Conn) bool {
 		return login(client_conn)
 	}
 }
-
-// define Account struct
-type Account struct {
-	username string
-	password string
-}
-
-//loginJson := `{"username": "bob", "password": "1234" }`
-//var myLogin Login //var login is type Login
-//json.Unmarshal([]byte(loginJson), &myLogin)
-// Now can access username and password using dot notation:
-// myLogin.username, myLogin.password

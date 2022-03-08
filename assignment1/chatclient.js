@@ -1,5 +1,6 @@
 var net = require('net');
- 
+var readlineSync = require('readline-sync');
+var username, password
 if(process.argv.length != 4){
 	console.log("Usage: node %s <host> <port>", process.argv[1]);
 	process.exit(1);	
@@ -21,6 +22,12 @@ client.connect(port,host, connected);
 
 function connected(){
 	console.log("Connected to: %s:%s", client.remoteAddress, client.remotePort);
+
+	loginsync()
+
+	client.on("login failed", function(message) {
+		loginsync();
+	});
 
 	client.on("data", data => {
 		console.log("Received data: " + data);
@@ -50,4 +57,31 @@ function connected(){
 		client.write(input);
 		}
 	});
+}
+
+function loginsync() {
+	// Wait for user's response
+	username = readlineSync.question('Username:');
+	if (!inputValidated(username)) {
+		console.log("Username must have at least 5 characters. Please try again!");
+		loginsync();
+		return;
+	}
+	//client.write(username);
+	// Handle password text
+	password = readlineSync.question('Password:', {
+		hideEchoBack: true
+	});
+	if (!inputValidated(password)) {
+		console.log("Password must have at least 5 characters. Please try again!");
+		loginsync()
+		return;
+	}
+	//client.write(password)
+	var login = {Username: username, Password: password}
+	client.write(JSON.stringify(login))
+}
+
+function inputValidated(loginCredential) {
+	return (loginCredential.length > 4)
 }
