@@ -30,7 +30,7 @@ function connected(){
 	});
 
 	client.on("data", data => {
-		console.log("Received data: " + data);
+		process.stdout.write("Received data: " + data);
 	});
 
 	client.on("error", function(err){
