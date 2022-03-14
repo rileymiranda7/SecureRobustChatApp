@@ -35,7 +35,7 @@ function connected(){
 			console.log("Login Failed: please retry...")
 			loginsync();
 		} else {
-		process.stdout.write("Received data: " + data + "\n");
+		process.stdout.write(data + "\n");
 		}
 	});
 

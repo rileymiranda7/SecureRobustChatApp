@@ -90,8 +90,11 @@ func main() {
 }
 func client_goroutine(client_conn net.Conn) {
 	//var buffer [BUFFERSIZE]byte
+	var username = allLoggedIn_conns[client_conn].(User).Username
 	for {
-		menu := fmt.Sprintf("Type the number of the operation you would like to perform:\n  1) Get List of Online Users [1 + Enter/Return]\n--Type 'help' to display options again\n")
+		menu := fmt.Sprintf("Type the number of the operation you would like to perform:\n" +
+			"1) Get List of Online Users [1 + Enter/Return]\n2)  Send message to all online users " +
+			"[2 + Enter]\n3)  Send private message [3 + Enter]--Type 'help' to display options again\n")
 		sendto([]byte(menu), client_conn)
 		sendto([]byte("  Option: "), client_conn)
 		var optionNum = readInput(client_conn)
@@ -99,6 +102,16 @@ func client_goroutine(client_conn net.Conn) {
 		switch optionNum {
 		case "1":
 			sendUserList(client_conn)
+		case "2":
+			sendto([]byte("Type message:"), client_conn)
+			sendtoAll([]byte("[" + username + "]: " + readInput(client_conn) + "\n"))
+		case "3":
+			sendUserList(client_conn)
+			sendto([]byte("Type username of receiver:"), client_conn)
+			receiver := readInput(client_conn)
+			sendto([]byte("Type message to send to "+receiver), client_conn)
+			message := readInput(client_conn)
+			sendPrivateM(receiver, username, message)
 		case "help":
 			continue
 		default:
@@ -141,6 +154,13 @@ func sendUserList(client_conn net.Conn) {
 	}
 	sendto([]byte(userlist+"\n"), client_conn)
 }
+func sendPrivateM(receiver string, sender string, message string) {
+	for client_conn, _ := range allLoggedIn_conns {
+		if allLoggedIn_conns[client_conn].(User).Username == receiver {
+			sendto([]byte("[private message from "+sender+"]: "+message+"\n"), client_conn)
+		}
+	}
+}
 
 // Reads input; returns false if input is empty (less than 3 bytes)
 func readInput(client_conn net.Conn) string {
@@ -163,7 +183,7 @@ Else send error message back to client and call login() again
 func login(client_conn net.Conn) (bool, string) {
 	//fmt.Println("@login()")
 	var loginJSONstring = readInput(client_conn)
-	//fmt.Printf("Received login JSON: %s\n", loginJSONstring)
+	fmt.Printf("Received login JSON: %s\n", loginJSONstring)
 	loginSuccessful, message := checklogin(loginJSONstring, client_conn)
 	if !loginSuccessful {
 		return login(client_conn)
