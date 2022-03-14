@@ -34,6 +34,7 @@ type User struct {
 var allLoggedIn_conns = make(map[net.Conn]interface{})
 var newclient = make(chan net.Conn)
 var lostclient = make(chan net.Conn)
+var loggedInClient = make(chan net.Conn)
 
 //var clientAuthenticated = make(chan net.Conn)
 
@@ -63,6 +64,7 @@ func main() {
 	for {
 		select {
 		case client_conn := <-newclient:
+
 			loginSuccessful, username := login(client_conn)
 			if loginSuccessful {
 				var justLoggedInUser = User{Username: username, isLoggedIn: true}
@@ -75,6 +77,7 @@ func main() {
 				sendtoAll([]byte(welcomemessage))
 				go client_goroutine(client_conn)
 			}
+
 		case client_conn := <-lostclient:
 			//handling for the event
 			delete(allLoggedIn_conns, client_conn)
@@ -86,42 +89,32 @@ func main() {
 	}
 }
 func client_goroutine(client_conn net.Conn) {
-	var buffer [BUFFERSIZE]byte
+	//var buffer [BUFFERSIZE]byte
 	for {
-		menu := fmt.Sprintf("Type the number of the operation you would like to perform:\n  1) Get List of Online Users [1 + Enter/Return]\n")
+		menu := fmt.Sprintf("Type the number of the operation you would like to perform:\n  1) Get List of Online Users [1 + Enter/Return]\n--Type 'help' to display options again\n")
 		sendto([]byte(menu), client_conn)
 		sendto([]byte("  Option: "), client_conn)
 		var optionNum = readInput(client_conn)
-		fmt.Printf("optionNum: %s", optionNum)
+		fmt.Printf("optionNum: %s\n", optionNum)
 		switch optionNum {
 		case "1":
 			sendUserList(client_conn)
+		case "help":
+			continue
 		default:
-			sendto([]byte("Invalid Option"), client_conn)
+			//sendto([]byte("Invalid Option"), client_conn)
+			sendto([]byte("Invalid Option\n"), client_conn)
+			continue
 		}
-		byte_received, read_err := client_conn.Read(buffer[0:])
+		/*byte_received, read_err := client_conn.Read(buffer[0:])
 		if read_err != nil {
 			fmt.Println("Error in receiving...")
 			lostclient <- client_conn
 			return
 		}
-
 		// input validation
 		fmt.Printf("Received data: %sdata size = %d\n",
-			string(buffer[:]), byte_received)
-		/*if byte_received >= 7 && string(buffer[0:5]) == "login" {
-			success_message := fmt.Sprintf("You typed: login\nReceived data: login data\n")
-			_, write_err := client_conn.Write([]byte(success_message))
-			if write_err == nil {
-				fmt.Println("Sent data: login")
-			}
-		} else {
-			err_message := fmt.Sprintf("You typed: %sReceived data: Non-login data\n", string(buffer[:]))
-			_, write_err := client_conn.Write([]byte(err_message))
-			if write_err == nil {
-				fmt.Println("Sent data: Non-login data")
-			}
-		}*/
+			string(buffer[:]), byte_received)*/
 	}
 }
 func sendtoAll(data []byte) {
@@ -146,7 +139,7 @@ func sendUserList(client_conn net.Conn) {
 		user := allLoggedIn_conns[client_conn].(User)
 		userlist += user.Username + ", "
 	}
-	sendto([]byte(userlist), client_conn)
+	sendto([]byte(userlist+"\n"), client_conn)
 }
 
 // Reads input; returns false if input is empty (less than 3 bytes)
@@ -171,7 +164,12 @@ func login(client_conn net.Conn) (bool, string) {
 	//fmt.Println("@login()")
 	var loginJSONstring = readInput(client_conn)
 	//fmt.Printf("Received login JSON: %s\n", loginJSONstring)
-	return checklogin(loginJSONstring, client_conn)
+	loginSuccessful, message := checklogin(loginJSONstring, client_conn)
+	if !loginSuccessful {
+		return login(client_conn)
+	} else {
+		return loginSuccessful, message
+	}
 }
 
 /**
@@ -195,11 +193,15 @@ Compare username/password with database
 */
 func checkaccount(account Account, client_conn net.Conn) (bool, string) {
 	//fmt.Println("@checkaccount()")
-	if (account.Username == "riley" && account.Password == "12345") || (account.Username == "user0" && account.Password == "67890") {
+	if (account.Username == "riley" && account.Password == "12345") ||
+		(account.Username == "user0" && account.Password == "67890") ||
+		(account.Username == "user00" && account.Password == "123456789") {
 		//fmt.Println("@checkaccount() -> username and password received")
 		return true, account.Username
 	} else {
-		sendto([]byte("Invalid Username or Password...\n"), client_conn)
+		//sendto([]byte("Invalid Username or Password...\n"), client_conn)
+		fmt.Printf("Login <%s, %s> failed.\n", account.Username, account.Password)
+		sendto([]byte("Login failed"), client_conn)
 		return login(client_conn)
 	}
 }

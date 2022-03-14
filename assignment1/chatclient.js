@@ -1,5 +1,6 @@
 var net = require('net');
 var readlineSync = require('readline-sync');
+const { getSystemErrorMap } = require('util');
 var username, password
 if(process.argv.length != 4){
 	console.log("Usage: node %s <host> <port>", process.argv[1]);
@@ -30,7 +31,12 @@ function connected(){
 	});
 
 	client.on("data", data => {
-		process.stdout.write("Received data: " + data);
+		if (String.fromCharCode(...data) === "Login failed") {
+			console.log("Login Failed: please retry...")
+			loginsync();
+		} else {
+		process.stdout.write("Received data: " + data + "\n");
+		}
 	});
 
 	client.on("error", function(err){
