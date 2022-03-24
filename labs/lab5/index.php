@@ -15,7 +15,7 @@
 		else return FALSE;
   	}*/
   	function checklogin_sql($username, $password) {
-  		$mysqli = new my sqli('locahlhost',
+  		$mysqli = new mysqli('locahlhost',
   								'mirandar1', //Database username
   								'Peter6696', //Database password
   								'secad'); // Name of database
