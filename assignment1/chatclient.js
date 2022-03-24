@@ -66,7 +66,9 @@ function connected(){
 }
 
 function loginsync() {
-	// Wait for user's response
+	// Bug: readline-sync module is blocking. Multiple users can't log in at same time.
+	// First user to connect has to finish logging in before the other's login data sends.
+	// Possible solution: set timeout after 2 min if not logged in somehow?
 	username = readlineSync.question('Username:');
 	if (!inputValidated(username)) {
 		console.log("Username must have at least 5 characters. Please try again!");
