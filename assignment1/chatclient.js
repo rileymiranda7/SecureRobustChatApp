@@ -71,7 +71,6 @@ function loginsync() {
 	// Possible solution: set timeout after 2 min if not logged in somehow?
 	username = readlineSync.question('Username:');
 	if (!inputValidated(username)) {
-		console.log("Username must have at least 5 characters. Please try again!");
 		loginsync();
 		return;
 	}
@@ -81,7 +80,6 @@ function loginsync() {
 		hideEchoBack: true
 	});
 	if (!inputValidated(password)) {
-		console.log("Password must have at least 5 characters. Please try again!");
 		loginsync()
 		return;
 	}
@@ -91,5 +89,16 @@ function loginsync() {
 }
 
 function inputValidated(loginCredential) {
-	return (loginCredential.length > 4)
+	if (loginCredential.length > 4) {
+		if (loginCredential.length < 1024) {
+			return true
+		} else {
+			console.log("Input too long! Please try again:\n")
+			return false;
+		}
+	} else {
+		console.log("Input too short! Please try again:\n")
+		return false
+	}
+	return false
 }

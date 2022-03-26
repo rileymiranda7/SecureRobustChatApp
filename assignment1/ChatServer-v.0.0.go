@@ -58,13 +58,14 @@ func main() {
 	go func() {
 		for {
 			client_conn, _ := server.Accept()
+			fmt.Println("new client accepted")
 			newclient <- client_conn
 		}
 	}()
 	for {
 		select {
 		case client_conn := <-newclient:
-
+			fmt.Println("@case newclient")
 			loginSuccessful, username := login(client_conn)
 			if loginSuccessful {
 				var justLoggedInUser = User{Username: username, isLoggedIn: true}
@@ -90,7 +91,7 @@ func main() {
 			}
 			fmt.Printf("%s\n", userlist)
 			sendtoAll([]byte(byemessage))
-			client_conn.Close()
+			//client_conn.Close()
 		}
 	}
 }
@@ -104,20 +105,33 @@ func client_goroutine(client_conn net.Conn) {
 			"--Type 'help' to display options again\n")
 		sendto([]byte(menu), client_conn)
 		sendto([]byte("  Option: "), client_conn)
-		var optionNum = readInput(client_conn)
+		var optionNum, read_err = readInput(client_conn)
+		if read_err != nil {
+			break
+		}
 		fmt.Printf("optionNum: %s\n", optionNum)
 		switch optionNum {
 		case "1":
 			sendUserList(client_conn)
 		case "2":
 			sendto([]byte("Type message:"), client_conn)
-			sendtoAll([]byte("[" + username + "]: " + readInput(client_conn) + "\n"))
+			var input, read_err = readInput(client_conn)
+			if read_err != nil {
+				break
+			}
+			sendtoAll([]byte("[" + username + "]: " + input + "\n"))
 		case "3":
 			sendUserList(client_conn)
 			sendto([]byte("Type username of receiver:"), client_conn)
-			receiver := readInput(client_conn)
+			receiver, read_err := readInput(client_conn)
+			if read_err != nil {
+				break
+			}
 			sendto([]byte("Type message to send to "+receiver), client_conn)
-			message := readInput(client_conn)
+			message, read_err := readInput(client_conn)
+			if read_err != nil {
+				break
+			}
 			sendPrivateM(receiver, username, message)
 		case "help":
 			continue
@@ -157,11 +171,18 @@ func sendPrivateM(receiver string, sender string, message string) {
 	for client_conn, _ := range allLoggedIn_conns {
 		if allLoggedIn_conns[client_conn].(User).Username == receiver {
 			sendto([]byte("[private message from "+sender+"]: "+message+"\n"), client_conn)
+			return
+		}
+	}
+	for client_conn, _ := range allLoggedIn_conns {
+		if allLoggedIn_conns[client_conn].(User).Username == sender {
+			sendto([]byte("Selected user doesn't exist or is not online!"), client_conn)
+			return
 		}
 	}
 }
 
-func readInput(client_conn net.Conn) string {
+func readInput(client_conn net.Conn) (string, error) {
 	//fmt.Println("@readInput()")
 	var buffer [BUFFERSIZE]byte
 	byte_received, read_err := client_conn.Read(buffer[0:])
@@ -169,9 +190,9 @@ func readInput(client_conn net.Conn) string {
 	if read_err != nil /*|| byte_received < 3*/ {
 		fmt.Println("@readInput(): Error in receiving or empty input...")
 		lostclient <- client_conn
-		return "error"
+		return "error", read_err
 	}
-	return string(buffer[:byte_received])
+	return string(buffer[:byte_received]), nil
 }
 
 /**
@@ -181,7 +202,7 @@ Else send error message back to client and call login() again
 */
 func login(client_conn net.Conn) (bool, string) {
 	//fmt.Println("@login()")
-	var loginJSONstring = readInput(client_conn)
+	var loginJSONstring, _ = readInput(client_conn)
 	fmt.Printf("Received login JSON: %s\n", loginJSONstring)
 	loginSuccessful, message := checklogin(loginJSONstring, client_conn)
 	if !loginSuccessful {
