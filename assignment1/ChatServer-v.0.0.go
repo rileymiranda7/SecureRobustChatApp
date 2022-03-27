@@ -127,12 +127,16 @@ func client_goroutine(client_conn net.Conn) {
 			if read_err != nil {
 				break
 			}
-			sendto([]byte("Type message to send to "+receiver), client_conn)
-			message, read_err := readInput(client_conn)
-			if read_err != nil {
-				break
+			if !userIsOnline(client_conn, receiver) {
+				continue
+			} else {
+				sendto([]byte("Type message to send to "+receiver), client_conn)
+				message, read_err := readInput(client_conn)
+				if read_err != nil {
+					break
+				}
+				sendPrivateM(receiver, username, message)
 			}
-			sendPrivateM(receiver, username, message)
 		case "help":
 			continue
 		default:
@@ -161,23 +165,47 @@ func sendto(data []byte, client_conn net.Conn) {
 }
 func sendUserList(client_conn net.Conn) {
 	var userlist = "Online users: "
+	var userlistSlice []string
 	for client_conn, _ := range allLoggedIn_conns {
 		user := allLoggedIn_conns[client_conn].(User)
-		userlist += user.Username + ", "
+		userlistSlice = append(userlistSlice, user.Username)
 	}
+	userlistSlice = removeDuplicateStrings(userlistSlice)
+	for _, username := range userlistSlice {
+		userlist += username + ", "
+	}
+
 	sendto([]byte(userlist+"\n"), client_conn)
+}
+func removeDuplicateStrings(slice []string) []string {
+	strmap := make(map[string]bool) // initialize map where key will be values of str slice
+	list := []string{}
+	for _, item := range slice {
+		if _, val := strmap[item]; !val { // initialize bool val from map that tests if item from slice is in map
+			strmap[item] = true // if val not in map add to map and append to list; if is in map do nothing
+			list = append(list, item)
+		}
+	}
+	return list
+}
+func userIsOnline(client_conn net.Conn, user string) bool {
+	var messageWasSent = false
+	for client_conn, _ := range allLoggedIn_conns {
+		if allLoggedIn_conns[client_conn].(User).Username == user {
+			messageWasSent = true
+		}
+	}
+	if messageWasSent {
+		return true
+	} else {
+		sendto([]byte("Selected user is not online!\n"), client_conn)
+		return false
+	}
 }
 func sendPrivateM(receiver string, sender string, message string) {
 	for client_conn, _ := range allLoggedIn_conns {
 		if allLoggedIn_conns[client_conn].(User).Username == receiver {
 			sendto([]byte("[private message from "+sender+"]: "+message+"\n"), client_conn)
-			return
-		}
-	}
-	for client_conn, _ := range allLoggedIn_conns {
-		if allLoggedIn_conns[client_conn].(User).Username == sender {
-			sendto([]byte("Selected user doesn't exist or is not online!"), client_conn)
-			return
 		}
 	}
 }
