@@ -26,12 +26,16 @@ function connected(){
 
 	loginsync()
 
-	client.on("login failed", function(message) {
+	/*client.on("login failed", function(message) {
 		loginsync();
-	});
+	});*/
 
 	client.on("data", data => {
-		if (String.fromCharCode(...data) === "Login failed") {
+		var result = "";
+		for(var i = 0; i < data.length; i++) {
+			result += String.fromCharCode(parseInt(data[i])); // can't use spread operator
+		}
+		if (result === "Login failed") {
 			console.log("Login Failed: please retry...")
 			loginsync();
 		} else {
@@ -39,10 +43,10 @@ function connected(){
 		}
 	});
 
-	client.on("error", function(err){
+	/*client.on("error", function(err){
 		console.log("Error");
 		process.exit(2);
-	});
+	});*/
 	client.on("close", function(data){
 		console.log("Connection has been disconnected");
 		process.exit(3);
@@ -53,7 +57,7 @@ function connected(){
 		output: process.stout
 	});
 	keyboard.on('line', (input) => {
-		console.log(`You typed: ${input}`);
+		console.log(`You typed: ${input}\n`);
 		//Some code here to handle input
 		if(input === '.exit'){
 			client.destroy();
