@@ -85,9 +85,9 @@ func main() {
 func client_goroutine(client_conn net.Conn) {
 	var username = allLoggedIn_conns[client_conn].(User).Username
 	for {
-		menu := fmt.Sprintf("Type the number of the operation you would like to perform:\n" +
-			"1) Get List of Online Users [1 + Enter]\n2)  Send message to all online users " +
-			"[2 + Enter]\n3)  Send private message [3 + Enter]\n.exit) Exit Chat Server [.exit + Enter]\n" +
+		menu := fmt.Sprintf("Type the number/keyword of the operation you would like to perform:\n" +
+			"\t1)  Get List of Online Users [1 + Enter]\n\t2)  Send message to all online users " +
+			"[2 + Enter]\n\t3)  Send private message [3 + Enter]\n\t.exit) Exit Chat Server [.exit + Enter]\n" +
 			"--Type 'help' to display options again\n")
 		sendto([]byte(menu), client_conn)
 		sendto([]byte("  Option: "), client_conn)
