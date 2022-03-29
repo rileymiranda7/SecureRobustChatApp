@@ -15,7 +15,7 @@
 		else return FALSE;
   	}*/
   	function checklogin_sql($username, $password) {
-  		$mysqli = new mysqli('locahlhost',
+  		$mysqli = new mysqli('localhost',
   								'mirandar1', //Database username
   								'Peter6696', //Database password
   								'secad'); // Name of database
@@ -23,8 +23,8 @@
   			printf("Database connection failed: %s\n", $mysqli->connect_error);
   			exit();
   		}
-  		$sql = "SELECT * FROM users WHERE username='" . $username. "' ";
-  		$sql = $sql . "AND password = password('" . $password . "')";
+  		$sql = "SELECT * FROM users WHERE username='" . $username. "' "; // no input validation
+  		$sql = $sql . "AND password = password('" . $password . "')"; // no input validation
   		echo "DEBUG>sql= $sql";
   		return TRUE;
 		/*$account = array("admin","1234");
