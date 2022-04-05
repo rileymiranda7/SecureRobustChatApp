@@ -1,6 +1,6 @@
 <?php
-ini_set('display_errors', 'On');
-error_reporting(E_ALL);
+//ini_set('display_errors', 'On');
+//error_reporting(E_ALL);
 	session_start();   
   $mysqli = new mysqli('localhost','mirandar1','1234','secad');
       if($mysqli->connect_errno){
